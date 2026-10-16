@@ -1,3 +1,4 @@
+from os import name
 from subprocess import DEVNULL, run
 
 import click
@@ -44,6 +45,26 @@ WORLDS = [
 ]
 
 
+def _is_admin():
+    import ctypes
+
+    try:
+        return ctypes.windll.shell32.IsUserAnAdmin()
+    except:
+        return False
+
+
+def _request_admin_privileges():
+    try:
+        result = ctypes.windll.shell32.ShellExecuteW(
+            None, "runas", sys.executable, " ".join(sys.argv), None, 1
+        )
+        return result > 32  # Success if result > 32
+    except Exception as e:
+        print("Error:", str(e))
+        return False
+
+
 @click.group()
 def cli():
     """Launch PX4 SITL simulators in Docker."""
@@ -54,7 +75,6 @@ def launch(
     world: str,
     model: str,
     env_vars: tuple[str, ...],
-    headless: bool,
 ) -> None:
     """Run a PX4 SITL Docker image with the selected configuration.
 
@@ -63,26 +83,41 @@ def launch(
         world: World or environment to load.
         model: Vehicle model to load.
         env_vars: Extra environment variables in ``KEY=VALUE`` format.
-        headless: Whether to run without a graphical interface.
     """
     env_array = list(env_vars)
 
-    click.echo(f"Simulator: {simulator}")
+    click.echo(f"Simulator: {"sih" if not simulator else simulator}")
     click.echo(f"World: {world}")
     click.echo(f"Model: {model}")
     click.echo(f"Environment variables: {env_array}")
-    click.echo(f"Headless: {headless}")
+
+    command = [
+        "docker",
+        "run",
+        "--rm",
+        "-it",
+        "-e",
+        "HEADLESS=1"
+        f"px4io/px4-sitl{"-gazebo" if simulator == "gazebo" else ""}:latest",
+    ]
+
+    if name == "nt":
+        if _is_admin():
+            success = _request_admin_privileges()
+    else:
+        command.insert(0, "sudo")
+
+    if len(env_vars) > 0:
+        for var in env_vars:
+            print(var)
+            command.extend(["-e", var])
+
+    print(" ".join(command))
+    run(command)
 
 
 def simulator_options(function):
     """Add options shared by simulator commands."""
-
-    function = click.option(
-        "--headless",
-        is_flag=True,
-        default=False,
-        help="Run without a graphical interface.",
-    )(function)
 
     function = click.option(
         "--env",
@@ -97,7 +132,6 @@ def simulator_options(function):
         required=True,
         help="World to load.",
         type=click.Choice(WORLDS),
-        # show_choices=False,
     )(function)
     return function
 
@@ -113,9 +147,9 @@ def simulator_options(function):
     type=click.Choice(SIH_MODELS),
     show_choices=False,
 )
-def sih(world: str, model: str, env_vars: tuple[str, ...], headless: bool) -> None:
+def sih(world: str, model: str, env_vars: tuple[str, ...]) -> None:
     """Launch PX4 SITL using the SIH simulator."""
-    launch("sih", world, model, env_vars, headless)
+    launch("str", world, model, env_vars)
 
 
 @cli.command(
@@ -129,9 +163,9 @@ def sih(world: str, model: str, env_vars: tuple[str, ...], headless: bool) -> No
     type=click.Choice(GZ_MODELS),
     show_choices=False,
 )
-def gazebo(world: str, model: str, env_vars: tuple[str, ...], headless: bool) -> None:
+def gazebo(world: str, model: str, env_vars: tuple[str, ...]) -> None:
     """Launch PX4 SITL using Gazebo."""
-    launch("gazebo", world, model, env_vars, headless)
+    launch("gazebo", world, model, env_vars)
 
 
 def _verify_docker_install():
