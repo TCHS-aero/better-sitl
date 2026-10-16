@@ -102,6 +102,10 @@ def launch(
         "--network",
         "host",
         "-e",
+        f"PX4_GZ_WORLD={world}",
+        "-e",
+        f"PX4_SIM_MODEL={model}",
+        "-e",
         "HEADLESS=1",
     ]
 
