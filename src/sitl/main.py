@@ -1,3 +1,5 @@
+from subprocess import DEVNULL, run
+
 import click
 
 GZ_MODELS = [
@@ -132,8 +134,20 @@ def gazebo(world: str, model: str, env_vars: tuple[str, ...], headless: bool) ->
     launch("gazebo", world, model, env_vars, headless)
 
 
+def _verify_docker_install():
+    try:
+        result = run(["docker"], stdout=DEVNULL, stderr=DEVNULL)
+    except FileNotFoundError:
+        print(
+            "Docker is not installed in your system.\nPlease visit https://docs.docker.com/ and installing either Docker Engine or Docker Desktop.\nFor Arch-Based distrobutions of linux, Docker Engine can be installed through pacman."
+        )
+
+        raise SystemExit(1)
+
+
 def main():
     try:
+        _verify_docker_install()
         cli()
     except KeyboardInterrupt:
         print("\n-- Interrupted.")
