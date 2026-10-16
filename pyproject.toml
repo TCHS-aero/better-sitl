@@ -13,8 +13,7 @@ dependencies = [
 ]
 
 [project.scripts]
-sitl = "sitl.cli:main"
-
+sitl = "sitl.main:main"
 
 [tool.setuptools.packages.find]
 where = ["src"]
