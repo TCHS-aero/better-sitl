@@ -55,6 +55,8 @@ def _is_admin():
 
 
 def _request_admin_privileges():
+    import sys
+
     try:
         result = ctypes.windll.shell32.ShellExecuteW(
             None, "runas", sys.executable, " ".join(sys.argv), None, 1
@@ -86,6 +88,7 @@ def launch(
     """
     env_array = list(env_vars)
 
+    click.echo()
     click.echo(f"Simulator: {"sih" if not simulator else simulator}")
     click.echo(f"World: {world}")
     click.echo(f"Model: {model}")
@@ -114,7 +117,9 @@ def launch(
 
     command.append(f"px4io/px4-sitl{"-gazebo" if simulator == "gazebo" else ""}:latest")
 
-    print(" ".join(command))
+    click.echo(f"Running command: {" ".join(command)}")
+    click.echo()
+
     run(command)
 
 
