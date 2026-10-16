@@ -1,0 +1,20 @@
+[build-system]
+requires = ["setuptools>=61.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "sitl"
+version = "0.1.0"
+description = "A Python CLI wrapper built with click for PX4's SIH and Gazebo SITL docker images; designed for a smoother integrated workflow."
+readme = "README.md"
+requires-python = ">=3.12"
+dependencies = [
+    "click",
+]
+
+[project.scripts]
+sitl = "sitl.cli:main"
+
+
+[tool.setuptools.packages.find]
+where = ["src"]
