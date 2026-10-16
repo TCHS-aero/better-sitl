@@ -96,9 +96,10 @@ def launch(
         "run",
         "--rm",
         "-it",
+        "--network",
+        "host",
         "-e",
-        "HEADLESS=1"
-        f"px4io/px4-sitl{"-gazebo" if simulator == "gazebo" else ""}:latest",
+        "HEADLESS=1",
     ]
 
     if name == "nt":
@@ -107,10 +108,11 @@ def launch(
     else:
         command.insert(0, "sudo")
 
-    if len(env_vars) > 0:
-        for var in env_vars:
-            print(var)
-            command.extend(["-e", var])
+    for var in env_array:
+        command.append("-e")
+        command.append(var)
+
+    command.append(f"px4io/px4-sitl{"-gazebo" if simulator == "gazebo" else ""}:latest")
 
     print(" ".join(command))
     run(command)
