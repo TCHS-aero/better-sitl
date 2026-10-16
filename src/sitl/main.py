@@ -1,5 +1,46 @@
 import click
 
+GZ_MODELS = [
+    "gz_x500",
+    "gz_x500_vision",
+    "gz_x500_depth",
+    "gz_x500_mono_cam",
+    "gz_x500_mono_cam_down",
+    "gz_x500_mono_lidar_down",
+    "gz_x500_mono_lidar_front",
+    "gz_x500_mono_lidar_2d",
+    "gz_x500_gimbal",
+    "gz_rc_cessna",
+    "gz_advanced_plane",
+    "gz_standard_vtol",
+    "gz_quadtailsitter",
+    "gz_tiltrotor",
+    "gz_rover_differential",
+    "gz_rover_ackerman",
+    "gz_rover_mecanum",
+]
+
+SIH_MODELS = [
+    "sihsim_quadx",
+    "sihsim_hex",
+    "sihsim_airplane",
+    "sihsim_xvert",
+    "sihsim_standard_vtol",
+    "sihsim_rover_ackermann",
+]
+
+WORLDS = [
+    "default",
+    "aruco",
+    "baylands",
+    "lawn",
+    "ridge",
+    "rover",
+    "walls",
+    "windy",
+    "moving_platform",
+]
+
 
 @click.group()
 def cli():
@@ -33,12 +74,14 @@ def launch(
 
 def simulator_options(function):
     """Add options shared by simulator commands."""
+
     function = click.option(
         "--headless",
         is_flag=True,
         default=False,
         help="Run without a graphical interface.",
     )(function)
+
     function = click.option(
         "--env",
         "env_vars",
@@ -46,22 +89,44 @@ def simulator_options(function):
         metavar="KEY=VALUE",
         help="Pass an extra environment variable. Repeat to add more.",
     )(function)
-    function = click.option("--model", required=True, help="Vehicle model to load.")(
-        function
-    )
-    function = click.option("--world", required=True, help="World to load.")(function)
+
+    function = click.option(
+        "--world",
+        required=True,
+        help="World to load.",
+        type=click.Choice(WORLDS),
+        # show_choices=False,
+    )(function)
     return function
 
 
-@cli.command()
+@cli.command(
+    epilog=f"Available Models: {" ".join([f"{model}" for model in SIH_MODELS])}"
+)
 @simulator_options
+@click.option(
+    "--model",
+    required=True,
+    help="Vehicle model to load.",
+    type=click.Choice(SIH_MODELS),
+    show_choices=False,
+)
 def sih(world: str, model: str, env_vars: tuple[str, ...], headless: bool) -> None:
     """Launch PX4 SITL using the SIH simulator."""
     launch("sih", world, model, env_vars, headless)
 
 
-@cli.command()
+@cli.command(
+    epilog=f"Available Models: {" ".join([f"{model}" for model in GZ_MODELS])}"
+)
 @simulator_options
+@click.option(
+    "--model",
+    required=True,
+    help="Vehicle model to load.",
+    type=click.Choice(GZ_MODELS),
+    show_choices=False,
+)
 def gazebo(world: str, model: str, env_vars: tuple[str, ...], headless: bool) -> None:
     """Launch PX4 SITL using Gazebo."""
     launch("gazebo", world, model, env_vars, headless)
