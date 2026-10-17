@@ -124,11 +124,7 @@ def launch(
     click.echo(f"Running command: {" ".join(command)}")
     click.echo()
 
-    result = run(command, stderr=DEVNULL)
-    if result.returncode == 1:
-        click.echo(
-            "We encountered an error while attempting to run the command. Is Docker Daemon running?"
-        )
+    run(command)
 
 
 def simulator_options(function):
