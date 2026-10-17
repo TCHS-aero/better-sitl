@@ -111,3 +111,4 @@ Gazebo and SIH have different models that can be ran through the simulation.
 * [Gazebo Harmonic Vehicles](https://docs.px4.io/main/en/sim_gazebo_gz/vehicles)
 * [SIH Simulation Details](https://docs.px4.io/main/en/sim_sih/index)
 * [Click](https://click.palletsprojects.com/en/stable/)
+* [Official Pip Package](https://pypi.org/project/better-sitl/)
