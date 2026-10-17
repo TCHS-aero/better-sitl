@@ -59,6 +59,11 @@ def docker_command(*args: str) -> list[str]:
 
 @click.group()
 def cli():
+    pass
+
+
+@cli.group(name="run")
+def exec():
     """Launch PX4 SITL simulators in Docker."""
 
 
@@ -159,7 +164,7 @@ def launch(
     command.append(image_ref)
 
     click.echo(f"Running command: {' '.join(command)}")
-    run(command, check=True)
+    run(command)
 
 
 def simulator_options(function):
@@ -180,7 +185,7 @@ def simulator_options(function):
     )(function)
 
 
-@cli.command()
+@exec.command()
 @simulator_options
 @click.option(
     "--model",
@@ -194,7 +199,7 @@ def sih(world: str, model: str, env_vars: tuple[str, ...]) -> None:
     launch("sih", world, model, env_vars)
 
 
-@cli.command()
+@exec.command()
 @simulator_options
 @click.option(
     "--model",
