@@ -38,11 +38,7 @@ colima start
 > If you encounter credential errors on MacOS, edit `$HOME/.docker/config.json` and change `"credsStore": "desktop"` to `"credsStore": "osxkeychain"`.
 
 #### Installation
-1. Clone this repository
-```bash
-git clone https://github.com/TCHS-aero/better-sitl.git
-```
-2. Install with pip
+Install with pip
 ```bash
 pip install better-sitl
 ```
