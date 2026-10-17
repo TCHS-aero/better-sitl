@@ -113,7 +113,7 @@ def list_images() -> None:
     )
 
 
-@image.command()
+@image.command(help='Remove installed PX4 docker images. Either "gazebo" or "sih"')
 @click.option(
     "--image",
     "images",
