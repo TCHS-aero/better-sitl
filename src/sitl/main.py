@@ -1,5 +1,6 @@
 from os import name
-from subprocess import DEVNULL, run
+from shutil import which
+from subprocess import run
 
 import click
 
@@ -50,6 +51,12 @@ WORLDS = [
 ]
 
 
+def docker_command(*args: str) -> list[str]:
+    """Build a Docker command, using sudo on non-Windows systems."""
+    prefix = ["sudo"] if name != "nt" else []
+    return [*prefix, "docker", *args]
+
+
 @click.group()
 def cli():
     """Launch PX4 SITL simulators in Docker."""
@@ -57,63 +64,63 @@ def cli():
 
 @cli.group()
 def image():
-    """Handle installed images in Docker."""
+    """Handle installed Docker images."""
 
 
-@image.command(name="list", help="List all Docker images related to PX4.")
-def list_images():
-    command = [
-        "docker",
-        "image",
-        "ls",
-        "--filter",
-        "reference=px4io/*",
-        "--format",
-        "{{.Repository}}",
+@image.command(name="list", help="List installed PX4 Docker images.")
+def list_images() -> None:
+    result = run(
+        docker_command(
+            "image",
+            "ls",
+            "--filter",
+            "reference=px4io/*",
+            "--format",
+            "{{.Repository}}:{{.Tag}}",
+        ),
+        capture_output=True,
+        text=True,
+        check=True,
+    )
+
+    installed_refs = set(result.stdout.splitlines())
+    installed_names = [
+        short_name
+        for short_name, image_ref in IMAGE_REFS.items()
+        if image_ref in installed_refs
     ]
 
-    if name != "nt":
-        command.insert(0, "sudo")
+    if not installed_names:
+        click.echo("You currently have no supported PX4 images installed.")
+        return
 
-    result = run(command, capture_output=True, text=True, check=True)
+    names = " and ".join(f'"{short_name}"' for short_name in installed_names)
+    plural = len(installed_names) > 1
 
-    image_names = result.stdout.splitlines()
-    short_names = []
-
-    for image in image_names:
-        cut_name = image.rsplit("/", 1)[-1].split(":", 1)[0].rsplit("-", 1)[-1]
-        short_names.append("sih" if cut_name == "sitl" else cut_name)
-
-    if not short_names:
-        click.echo("You currently have no images installed.")
-    else:
-        quoted_names = [f'"{s_name}"' for s_name in short_names]
-        names = " or ".join(quoted_names)
-        is_plural = len(short_names) > 1
-
-        click.echo(
-            f"You currently have the {names} image{'s' if is_plural else ''} installed."
-        )
-        click.echo(
-            f"If you would like to remove {'them' if is_plural else 'it'}, "
-            f"provide {names} to the remove command."
-        )
+    click.echo(
+        f"You currently have the {names} image{'s' if plural else ''} installed."
+    )
+    click.echo(
+        f"To remove {'them' if plural else 'it'}, use "
+        f"{' or '.join(f'--image {name}' for name in installed_names)} "
+        "with the image remove command."
+    )
 
 
 @image.command()
 @click.option(
     "--image",
+    "images",
     multiple=True,
     required=True,
-    type=click.Choice(["sih", "gazebo"]),
-    help="Remove a provided docker image related to PX4. Handy for quick uninstalls. Can be used multiple times.",
+    type=click.Choice(tuple(IMAGE_REFS)),
+    help="PX4 image to remove. Repeat this option to remove multiple images.",
 )
-def remove(image: list[str]):
-    privilege = ["sudo"] if name != "nt" else []
-    image_refs = [IMAGE_REFS[img] for img in image]
+def remove(images: tuple[str, ...]) -> None:
+    image_refs = [IMAGE_REFS[short_name] for short_name in images]
 
     run(
-        privilege + ["docker", "image", "rm"] + image_refs,
+        docker_command("image", "rm", *image_refs),
         check=True,
     )
 
@@ -124,24 +131,15 @@ def launch(
     model: str,
     env_vars: tuple[str, ...],
 ) -> None:
-    """Run a PX4 SITL Docker image with the selected configuration.
+    """Run a PX4 SITL Docker image with the selected configuration."""
+    image_ref = IMAGE_REFS[simulator]
 
-    Args:
-        simulator: Simulator backend, such as ``"sih"`` or ``"gazebo"``.
-        world: World or environment to load.
-        model: Vehicle model to load.
-        env_vars: Extra environment variables in ``KEY=VALUE`` format.
-    """
-    env_array = list(env_vars)
-
-    click.echo()
-    click.echo(f"Simulator: {"sih" if not simulator else simulator}")
+    click.echo(f"Simulator: {simulator}")
     click.echo(f"World: {world}")
     click.echo(f"Model: {model}")
-    click.echo(f"Environment variables: {env_array}")
+    click.echo(f"Environment variables: {list(env_vars)}")
 
-    command = [
-        "docker",
+    command = docker_command(
         "run",
         "--rm",
         "-it",
@@ -153,26 +151,19 @@ def launch(
         f"PX4_SIM_MODEL={model}",
         "-e",
         "HEADLESS=1",
-    ]
+    )
 
-    if name != "nt":
-        command.insert(0, "sudo")
+    for env_var in env_vars:
+        command.extend(["-e", env_var])
 
-    for var in env_array:
-        command.append("-e")
-        command.append(var)
+    command.append(image_ref)
 
-    command.append(f"px4io/px4-sitl{"-gazebo" if simulator == "gazebo" else ""}:latest")
-
-    click.echo(f"Running command: {" ".join(command)}")
-    click.echo()
-
-    run(command)
+    click.echo(f"Running command: {' '.join(command)}")
+    run(command, check=True)
 
 
 def simulator_options(function):
     """Add options shared by simulator commands."""
-
     function = click.option(
         "--env",
         "env_vars",
@@ -181,64 +172,52 @@ def simulator_options(function):
         help="Pass an extra environment variable. Repeat to add more.",
     )(function)
 
-    function = click.option(
+    return click.option(
         "--world",
         required=True,
-        help="World to load.",
         type=click.Choice(WORLDS),
+        help="World to load.",
     )(function)
-    return function
 
 
-@cli.command(
-    epilog=f"Available Models: {" ".join([f"{model}" for model in SIH_MODELS])}"
-)
+@cli.command()
 @simulator_options
 @click.option(
     "--model",
     required=True,
-    help="Vehicle model to load.",
     type=click.Choice(SIH_MODELS),
     show_choices=False,
+    help="Vehicle model to load.",
 )
 def sih(world: str, model: str, env_vars: tuple[str, ...]) -> None:
     """Launch PX4 SITL using the SIH simulator."""
-    launch("str", world, model, env_vars)
+    launch("sih", world, model, env_vars)
 
 
-@cli.command(
-    epilog=f"Available Models: {" ".join([f"{model}" for model in GZ_MODELS])}"
-)
+@cli.command()
 @simulator_options
 @click.option(
     "--model",
     required=True,
-    help="Vehicle model to load.",
     type=click.Choice(GZ_MODELS),
     show_choices=False,
+    help="Vehicle model to load.",
 )
 def gazebo(world: str, model: str, env_vars: tuple[str, ...]) -> None:
     """Launch PX4 SITL using Gazebo."""
     launch("gazebo", world, model, env_vars)
 
 
-def _verify_docker_install():
-    try:
-        result = run(["docker"], stdout=DEVNULL, stderr=DEVNULL)
-    except FileNotFoundError:
-        print(
-            "Docker is not installed in your system.\nPlease visit https://docs.docker.com/ and installing either Docker Engine or Docker Desktop.\nFor Arch-Based distrobutions of linux, Docker Engine can be installed through pacman."
+def main() -> None:
+    if which("docker") is None:
+        raise click.ClickException(
+            "Docker is not installed or is not available on PATH."
         )
 
-        raise SystemExit(1)
-
-
-def main():
     try:
-        _verify_docker_install()
         cli()
     except KeyboardInterrupt:
-        print("\n-- Interrupted.")
+        click.echo("\n-- Interrupted.")
         raise SystemExit(130)
 
 
