@@ -3,6 +3,11 @@ from subprocess import DEVNULL, run
 
 import click
 
+IMAGE_REFS = {
+    "gazebo": "px4io/px4-sitl-gazebo:latest",
+    "sih": "px4io/px4-sitl:latest",
+}
+
 GZ_MODELS = [
     "gz_x500",
     "gz_x500_vision",
@@ -53,6 +58,64 @@ def cli():
 @cli.group()
 def image():
     """Handle installed images in Docker."""
+
+
+@image.command(name="list", help="List all Docker images related to PX4.")
+def list_images():
+    command = [
+        "docker",
+        "image",
+        "ls",
+        "--filter",
+        "reference=px4io/*",
+        "--format",
+        "{{.Repository}}",
+    ]
+
+    if name != "nt":
+        command.insert(0, "sudo")
+
+    result = run(command, capture_output=True, text=True, check=True)
+
+    image_names = result.stdout.splitlines()
+    short_names = []
+
+    for image in image_names:
+        cut_name = image.rsplit("/", 1)[-1].split(":", 1)[0].rsplit("-", 1)[-1]
+        short_names.append("sih" if cut_name == "sitl" else cut_name)
+
+    if not short_names:
+        click.echo("You currently have no images installed.")
+    else:
+        quoted_names = [f'"{s_name}"' for s_name in short_names]
+        names = " or ".join(quoted_names)
+        is_plural = len(short_names) > 1
+
+        click.echo(
+            f"You currently have the {names} image{'s' if is_plural else ''} installed."
+        )
+        click.echo(
+            f"If you would like to remove {'them' if is_plural else 'it'}, "
+            f"provide {names} to the remove command."
+        )
+
+
+@image.command()
+@click.option(
+    "--image",
+    multiple=True,
+    required=True,
+    type=click.Choice(["sih", "gazebo"]),
+    help="Remove a provided docker image related to PX4. Handy for quick uninstalls. Can be used multiple times.",
+)
+def remove(image: list[str]):
+    privilege = ["sudo"] if name != "nt" else []
+    image_refs = [IMAGE_REFS[img] for img in image]
+
+    run(
+        privilege + ["docker", "image", "rm"] + image_refs,
+        check=True,
+    )
 
 
 def launch(
