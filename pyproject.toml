@@ -7,6 +7,7 @@ name = "better-sitl"
 version = "1.0.0"
 authors = [
     { name="TCHS-aero", email="tchsaero@tcusd.net" },
+    { name="Matthew Hannon", email="matthannon.dev@gmail.com" },
 ]
 description = "A Python CLI wrapper built with click for PX4's SIH and Gazebo SITL docker images; designed for a smoother integrated workflow."
 readme = "README.md"
