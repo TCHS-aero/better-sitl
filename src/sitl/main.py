@@ -64,7 +64,7 @@ def cli():
 
 
 @cli.group(name="run")
-def exec():
+def run_group():
     """Launch PX4 SITL simulators in Docker."""
 
 
@@ -170,8 +170,9 @@ def launch(
     click.echo(f"Running command: {' '.join(command)}")
     try:
         run(command, check=True)
-    except Exception:
+    except KeyboardInterrupt:
         click.echo("Interrupted.")
+    finally:
 
         # Had a few hard to replicate bugs where the container wouldn't self-resolve.
         # I gave each container a unique name and force cleaned them up afterwards as as solution.
@@ -202,7 +203,7 @@ def simulator_options(function):
     )(function)
 
 
-@exec.command()
+@run_group.command()
 @simulator_options
 @click.option(
     "--model",
@@ -216,7 +217,7 @@ def sih(world: str, model: str, env_vars: tuple[str, ...]) -> None:
     launch("sih", world, model, env_vars)
 
 
-@exec.command()
+@run_group.command()
 @simulator_options
 @click.option(
     "--model",
