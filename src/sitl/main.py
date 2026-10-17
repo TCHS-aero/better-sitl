@@ -86,7 +86,7 @@ def list_images() -> None:
         ),
         capture_output=True,
         text=True,
-        check=True,
+        check=False,
     )
 
     installed_refs = set(result.stdout.splitlines())
@@ -127,7 +127,7 @@ def remove(images: tuple[str, ...]) -> None:
 
     run(
         docker_command("image", "rm", *image_refs),
-        check=True,
+        check=False,
     )
 
 
@@ -169,7 +169,7 @@ def launch(
 
     click.echo(f"Running command: {' '.join(command)}")
     try:
-        run(command, check=True)
+        run(command, check=False)
     except KeyboardInterrupt:
         click.echo("Interrupted.")
     finally:
