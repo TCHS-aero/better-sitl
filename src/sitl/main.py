@@ -45,31 +45,14 @@ WORLDS = [
 ]
 
 
-def _is_admin():
-    import ctypes
-
-    try:
-        return ctypes.windll.shell32.IsUserAnAdmin()
-    except:
-        return False
-
-
-def _request_admin_privileges():
-    import sys
-
-    try:
-        result = ctypes.windll.shell32.ShellExecuteW(
-            None, "runas", sys.executable, " ".join(sys.argv), None, 1
-        )
-        return result > 32  # Success if result > 32
-    except Exception as e:
-        print("Error:", str(e))
-        return False
-
-
 @click.group()
 def cli():
     """Launch PX4 SITL simulators in Docker."""
+
+
+@cli.group()
+def image():
+    """Handle installed images in Docker."""
 
 
 def launch(
@@ -109,10 +92,7 @@ def launch(
         "HEADLESS=1",
     ]
 
-    if name == "nt":
-        if _is_admin():
-            success = _request_admin_privileges()
-    else:
+    if name != "nt":
         command.insert(0, "sudo")
 
     for var in env_array:
