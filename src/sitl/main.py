@@ -233,9 +233,8 @@ def gazebo(world: str, model: str, env_vars: tuple[str, ...]) -> None:
 
 def main() -> None:
     if which("docker") is None:
-        raise click.ClickException(
-            "Docker is not installed or is not available on PATH."
-        )
+        click.echo("Docker is not available on PATH. Do you have it installed?")
+        return
 
     try:
         cli()
