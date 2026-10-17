@@ -1,6 +1,7 @@
 from os import name
 from shutil import which
-from subprocess import run
+from subprocess import DEVNULL, run
+from uuid import uuid4
 
 import click
 
@@ -144,12 +145,15 @@ def launch(
     click.echo(f"Model: {model}")
     click.echo(f"Environment variables: {list(env_vars)}")
 
+    container_name = f"px4-sitl-{uuid4().hex[:8]}"
     command = docker_command(
         "run",
         "--rm",
         "-it",
         "--network",
         "host",
+        "--name",
+        container_name,
         "-e",
         f"PX4_GZ_WORLD={world}",
         "-e",
@@ -164,7 +168,20 @@ def launch(
     command.append(image_ref)
 
     click.echo(f"Running command: {' '.join(command)}")
-    run(command)
+    try:
+        run(command, check=True)
+    except Exception:
+        click.echo("Interrupted.")
+
+        # Had a few hard to replicate bugs where the container wouldn't self-resolve.
+        # I gave each container a unique name and force cleaned them up afterwards as as solution.
+        # Not sure if this was the best thing to do but I haven't encountered the bug since, so...
+        run(
+            docker_command("container", "rm", "--force", container_name),
+            stdout=DEVNULL,
+            stderr=DEVNULL,
+            check=False,
+        )
 
 
 def simulator_options(function):
