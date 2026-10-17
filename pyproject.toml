@@ -1,16 +1,30 @@
 [build-system]
-requires = ["setuptools>=61.0", "wheel"]
+requires = ["setuptools>=77.0.3", "wheel"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "sitl"
-version = "0.1.0"
+name = "better-sitl"
+version = "1.0.0"
+authors = [
+    { name="TCHS-aero", email="tchsaero@tcusd.net" },
+]
 description = "A Python CLI wrapper built with click for PX4's SIH and Gazebo SITL docker images; designed for a smoother integrated workflow."
 readme = "README.md"
 requires-python = ">=3.12"
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "Operating System :: OS Independent",
+]
+license = "MIT"
+license-files = ["LICEN[CS]E*"]
 dependencies = [
     "click",
 ]
+
+[project.urls]
+TeamWebsite = "https://tchsaero.org"
+Homepage = "https://github.com/TCHS-aero/better-sitl"
+Issues = "https://github.com/TCHS-aero/better-sitl/issues"
 
 [project.scripts]
 sitl = "sitl.main:main"
