@@ -27,6 +27,13 @@ jobs:
         with:
           enable-cache: true
 
+      - name: Set project version from release tag
+        env:
+          RELEASE_TAG: ${{ github.event.release.tag_name || github.ref_name }}
+        run: |
+          VERSION="${RELEASE_TAG#v}"
+          uv version "$VERSION"
+
       - name: Build distributions
         run: uv build
 
