@@ -1,0 +1,17 @@
+pkgbase = better-sitl
+	pkgdesc = A Python CLI wrapper built with click for PX4's SIH and Gazebo SITL docker images; designed for a smoother integrated workflow.
+	pkgver = 1.0.2
+	pkgrel = 1
+	url = https://github.com/TCHS-aero/better-sitl
+	arch = any
+	license = MIT
+	makedepends = python-build
+	makedepends = python-installer
+	makedepends = python-setuptools
+	depends = python>=3.12
+	depends = python-click
+	optdepends = docker: run the SITL simulator containers
+	source = better-sitl-1.0.2.tar.gz::https://github.com/TCHS-aero/better-sitl/archive/refs/tags/v1.0.2.tar.gz
+	sha256sums = SKIP
+
+pkgname = better-sitl
